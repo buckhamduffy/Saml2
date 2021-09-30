@@ -174,6 +174,7 @@ class Provider extends AbstractProvider implements SocialiteProvider
             'sp_name_id_format',
             'idp_binding_method',
             'attribute_map',
+            'name_id_format',
         ];
     }
 
@@ -200,7 +201,10 @@ class Provider extends AbstractProvider implements SocialiteProvider
             ->setProtocolBinding($this->getDefaultAssertionConsumerServiceBinding())
             ->setIssueInstant(new DateTime())
             ->setDestination($identityProviderConsumerService->getLocation())
-            ->setNameIDPolicy((new NameIDPolicy())->setFormat($this->getNameIDFormat()))
+             ->setNameIDPolicy((new NameIDPolicy())->setFormat($this->getConfig(
+                'name_id_format',
+                SamlConstants::NAME_ID_FORMAT_PERSISTENT
+            )))
             ->setIssuer(new Issuer($this->getServiceProviderEntityDescriptor()->getEntityID()))
             ->setAssertionConsumerServiceURL($this->getServiceProviderAssertionConsumerUrl());
 
@@ -570,7 +574,11 @@ class Provider extends AbstractProvider implements SocialiteProvider
 
         $this->user = new User();
         $this->user->setAssertion($assertion);
-        $this->user->map(['id' => $assertion->getSubject()->getNameID()->getValue()]);
+
+        if ($assertion->getSubject()->getNameID()) {
+            $this->user->map(['id' => $assertion->getSubject()->getNameID()->getValue()]);
+        }
+
 
         if ($attributeStatement) {
             $this->user->map($this->mapAttributes($attributeStatement));
